@@ -1,5 +1,5 @@
 
-PROJ_DIR  	= /homes/suvinay/Research/Work/pifo/pifo-hardware
+PROJ_DIR  	= /path/to/pifo/pifo-hardware
 
 SRC_DIR   	= $(PROJ_DIR)/src
 BUILD_DIR 	= $(PROJ_DIR)/build
