@@ -1,0 +1,6 @@
+../design/globals_top.v
+
+support/globals.v
+support/clock_generator.v
+
+pifo/pifo_tb.v
