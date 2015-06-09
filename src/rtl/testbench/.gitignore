@@ -1,0 +1,7 @@
+Makefile.inc
+*.exec
+*.exec.*
+*.log
+ucli.key
+*.daidir
+csrc
