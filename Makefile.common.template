@@ -1,0 +1,9 @@
+
+PROJ_DIR  	= /homes/suvinay/Research/Work/pifo/pifo-hardware
+
+SRC_DIR   	= $(PROJ_DIR)/src
+BUILD_DIR 	= $(PROJ_DIR)/build
+
+# [ssub] Eventually there will be a entire host of files required
+# for Synopsys DC, Encounter etc. here (eg: path to standard cell 
+# libraries etc.). Will add them as required.
