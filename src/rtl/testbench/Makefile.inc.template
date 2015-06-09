@@ -1,0 +1,63 @@
+
+# Name of the testbench
+TESTBENCH_FOLDER= pifo
+TESTBENCH		= pifo
+INCLUDE_FILE	= $(TESTBENCH_FOLDER)/$(TESTBENCH)_tb.include
+
+# Whether it is a gate level simulation
+GATE_SIM		= 0
+
+# Number of simulation cycles
+NUM_SIM_CYCLES	= 20000
+
+# Whether to enable debug message
+DEBUG_ENABLE	= 1
+
+# Whether to dump waveform (VPD, VCD)
+DUMP_WAVE		= 1
+WAVE_FORMAT		= VPD
+
+# Whether to run vcs (0, 1)
+RUN_VCS			= 1
+
+# VCS executable name
+SIMV_NAME		= run.exec
+
+# Simulation log/trace folder
+LOG_FOLDER		= logs/$(TESTBENCH_FOLDER)
+LOG_NAME		= $(TESTBENCH).log
+
+# VCS options
+VCS_OPTIONS		= +v2k -sverilog +lint=all,noVCDE +warn=all -notice
+VCS_OPTIONS		+= -j16 -O3 
+VCS_OPTIONS		+= -o $(SIMV_NAME)
+VCS_OPTIONS		+= +vcs+loopreport +vcs+loopdetect
+VCS_OPTIONS		+= +nospecify
+
+ifeq ($(DUMP_WAVE),1)
+	VCS_OPTIONS	+= +define+$(WAVE_FORMAT) -debug_pp -PP
+endif
+
+ifeq ($(DEBUG_ENABLE),1)
+	VCS_OPTIONS += +define+DEBUG_ENABLE
+endif
+
+# Simulation options
+SIMV_OPTIONS	= +NUM_SIM_CYCLES=$(NUM_SIM_CYCLES)
+SIMV_OPTIONS	+= +DEBUG_ROUTER=$(DEBUG_ROUTER) +DEBUG_NIC=$(DEBUG_NIC)
+
+# Gate level simulation options
+
+ifeq ($(GATE_SIM),1)
+	CLOCK_PERIOD= 1ns
+	VCS_OPTIONS += +vcs+initreg+random
+	SIMV_OPTIONS+= +vcs+initreg+random
+else
+	VCS_OPTIONS += +memcbk
+	VCS_OPTIONS += -parallel+vpd=10
+endif
+
+VCS_OPTIONS		+= $(EXTRA_VCS_OPTIONS)
+SIMV_OPTIONS	+= $(EXTRA_SIMV_OPTIONS)
+
+
