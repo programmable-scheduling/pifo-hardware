@@ -5,3 +5,4 @@ Makefile.inc
 ucli.key
 *.daidir
 csrc
+DVEfiles
