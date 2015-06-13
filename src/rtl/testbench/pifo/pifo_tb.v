@@ -195,8 +195,12 @@ begin: simulation_control_flow
 
     // Wait until the specified simulation time and call $finish
     #(`CYCLE*num_sim_cycles)
-    $finish();
 
+    // Monitor any signals you want
+    $monitor("\n\n======= STATS =======\nTotal packets generated: %d\nTotal packets received: %d\n\n", tg.r__num_pkts_sent__pff, tr.r__num_pkts_recvd__pff);
+    
+    #(`CYCLE)
+    $finish();
 end
 
 //------------------------------------------------------------------------------
@@ -218,13 +222,6 @@ begin: dump_wave
     $dumpfile(test_dump_name);
     $dumpvars(0, `TESTBENCH_NAME);
 `endif
-end
-
-//------------------------------------------------------------------------------
-// Monitor any signals 
-//------------------------------------------------------------------------------
-initial
-begin: monitor_signals
 end
 
 endmodule

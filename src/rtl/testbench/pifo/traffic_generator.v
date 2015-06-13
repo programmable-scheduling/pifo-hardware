@@ -92,7 +92,7 @@ assign w__generate_packet   = i__generate_phase && i__pifo_ready && (r__num_pkts
 //------------------------------------------------------------------------------
 // Sequential logic
 //------------------------------------------------------------------------------
-always @(posedge clk)
+always_ff @(posedge clk)
 begin
     if (reset)
     	r__num_pkts_sent__pff <= '0;

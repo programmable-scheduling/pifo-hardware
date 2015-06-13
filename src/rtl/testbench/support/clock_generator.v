@@ -7,7 +7,7 @@ module clock_generator(
 
 parameter HALF_CYCLE                    = 0.5;
 parameter SCAN_CLOCK                    = 0;
-parameter INIT_VALUE                    = 1'b0;
+parameter INIT_VALUE                    = 1'b1;
 
 output logic                            clk;
 output logic                            clk_delay;

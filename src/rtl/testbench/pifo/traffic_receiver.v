@@ -58,6 +58,7 @@ linear_feedback_shift_register
 //------------------------------------------------------------------------------
 // Combinational logic
 //------------------------------------------------------------------------------
+assign w__config         = i__config;
 assign w__receive_packet = i__receive_phase && i__pifo_ready && (w__lfsr_ejrate < w__config.ejrate);
 
 //------------------------------------------------------------------------------
