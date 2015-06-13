@@ -1,3 +1,13 @@
+//------------------------------------------------------------------------------
+// pifo_base maintains a sorted list of elements, 0 ... NUM_ELEMENTS
+// 0 ----> lowest priority element
+// It returns the highest priority element when queried
+// eg: This is a valid state of the pifo_buffer 
+// Index    0   1   2   3   4   5   6   7   8   9
+// Priority 10  22  34  47  234 237 x   x   x   x
+// In this state, when queried, pifo_buffer[5] (ie. prio 237) will
+// be returned.
+//------------------------------------------------------------------------------
 module pifo_base (
     //--------------------------------------------------------------------------
     // Global signals
