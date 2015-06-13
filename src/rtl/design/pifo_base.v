@@ -35,7 +35,7 @@ parameter   DATA_WIDTH      = (8);
 // Constants
 //------------------------------------------------------------------------------
 localparam  PRIO_WIDTH      = $clog2(MAX_PRIORITY);
-localparam  IDX_WIDTH       = $clog2(NUM_ELEMENTS);
+localparam  IDX_WIDTH       = $clog2(NUM_ELEMENTS+1);
 
 
 //------------------------------------------------------------------------------
@@ -96,8 +96,8 @@ PifoEntry                           r__buffer__pff          [NUM_ELEMENTS-1:0];
 assign o__data_in_ready         = ~r__full__pff & (~reset);         // When reset, ready should be low
 assign o__data_in_ready__next   = ~w__full__next;
 assign o__data_out_valid        = ~r__empty__pff;                   // When reset, this _will_ be low
-assign o__data_out              = r__buffer__pff[0].data;
-assign o__data_out_priority     = r__buffer__pff[0].prio;
+assign o__data_out              = r__buffer__pff[r__pifo_count__pff-1].data;
+assign o__data_out_priority     = r__buffer__pff[r__pifo_count__pff-1].prio;
 
 //------------------------------------------------------------------------------
 // Internal push and pop signals
@@ -161,10 +161,21 @@ end
 integer idx;
 always_comb
 begin
-    w__enq_idx = '0;
-    for(idx = 0; idx < NUM_ELEMENTS; idx = idx + 1)
-    	if ((idx < r__pifo_count__pff) && (i__data_in_priority > r__buffer__pff[idx].prio))
-    		w__enq_idx = idx;
+    w__enq_idx = NUM_ELEMENTS;
+
+    // Check if less than least element
+    if (i__data_in_priority < r__buffer__pff[0].prio)
+    begin
+    	w__enq_idx = '0;
+    end
+    else
+    begin
+        w__enq_idx = r__pifo_count__pff-1'b1;
+        for(idx = 0; idx < NUM_ELEMENTS; idx = idx + 1)
+        	if ((idx < r__pifo_count__pff) && (i__data_in_priority > r__buffer__pff[idx].prio))
+        		w__enq_idx = idx;
+        w__enq_idx = w__enq_idx + 1'b1;
+    end
 end
 
 genvar pifo_idx;
@@ -174,11 +185,7 @@ begin: gen_pifo_next_state
     always_comb
     begin
         r__buffer__next = r__buffer__pff[pifo_idx];
-        if (!w__push && w__pop && (pifo_idx != NUM_ELEMENTS-1))
-        begin 
-            r__buffer__next = r__buffer__pff[pifo_idx+1];
-        end
-        else if (w__push && !w__pop) 
+        if (w__push && !w__pop) 
         begin
             if (pifo_idx > w__enq_idx)
             begin
@@ -197,7 +204,13 @@ begin: gen_pifo_next_state
 
     always_ff @(posedge clk)
     begin
-        r__buffer__pff[pifo_idx] <= r__buffer__next;
+        if (reset)
+        begin
+        	r__buffer__pff[pifo_idx].data   <= '0;
+        	r__buffer__pff[pifo_idx].prio   <= '0;
+        end
+        else
+            r__buffer__pff[pifo_idx]    <= r__buffer__next;
     end
 end
 endgenerate
