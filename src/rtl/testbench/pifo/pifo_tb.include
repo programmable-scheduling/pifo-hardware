@@ -1,6 +1,15 @@
 ../design/globals_top.v
+pifo/globals_tb.v
 
 support/globals.v
 support/clock_generator.v
 
+../design/counter_base.v
+../design/counter.v
+../design/pifo_base.v
+../design/pifo.v
+
 pifo/pifo_tb.v
+pifo/linear_feedback_shift_register.v
+pifo/traffic_generator.v
+pifo/traffic_receiver.v
