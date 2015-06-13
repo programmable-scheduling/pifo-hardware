@@ -181,9 +181,14 @@ begin: gen_pifo_next_state
         else if (w__push && !w__pop) 
         begin
             if (pifo_idx > w__enq_idx)
+            begin
             	r__buffer__next = r__buffer__pff[pifo_idx - 1];
+            end
             else if (pifo_idx == w__enq_idx)
-            	r__buffer__next = r__buffer__pff[pifo_idx - 1];
+            begin
+            	r__buffer__next.data = i__data_in;
+            	r__buffer__next.prio = i__data_in_priority;
+            end
         end
         // [ssub] For now, either 1 push or 1 pop (or neither) can
         // happen in any particular cycle. If this assumption is violated

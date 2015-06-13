@@ -13,6 +13,7 @@ localparam  PACKET_POINTER_WIDTH    =   (8);
 localparam  NUM_ELEMENTS            =   (16);
 
 typedef logic [PACKET_POINTER_WIDTH-1:0]    PacketPointer;
+typedef logic [PRIORITY_WIDTH-1:0]          Priority;
 
 endpackage
 

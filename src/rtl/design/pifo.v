@@ -9,10 +9,11 @@ module pifo (
 
     o__dequeue_priority,
     o__packet_pointer,
-
     o__pifo_full,
     o__pifo_empty
 );
+
+`include "pifo_headers.vh"
 
 //------------------------------------------------------------------------------
 // Global signals
@@ -24,12 +25,12 @@ input  logic                            reset;
 // Interface
 //------------------------------------------------------------------------------
 input  logic                            i__enqueue;
-input  logic    [PRIORITY_WIDTH-1:0]    i__enqueue_priority;
+input  Priority                         i__enqueue_priority;
 input  PacketPointer                    i__packet_pointer;
 
 input  logic                            i__dequeue;
 
-output logic    [PRIORITY_WIDTH-1:0]    o__dequeue_priority;
+output Priority                         o__dequeue_priority;
 output PacketPointer                    o__packet_pointer;
 
 output logic                            o__pifo_full;
