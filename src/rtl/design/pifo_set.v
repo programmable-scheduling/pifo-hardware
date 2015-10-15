@@ -29,8 +29,8 @@ module pifo_base (
     i__push_valid,              // assert true, if you want to enqueue
     i__push_priority,
     i__push_data,
-    o__enqueue_ready,           // true, if pifo is not full: safe to enqueue
-    o__enqueue_ready__next,     // [ssub]  Remove if unnecessary, but I think it may be useful
+    o__push_ready,              // true, if pifo is not full: safe to enqueue
+    o__push_ready__next,        // [ssub]  Remove if unnecessary, but I think it may be useful
     i__reinsert_priority,       // we know the popped "index" from the output interface; no need 
                                 // to pass it again
 
@@ -78,8 +78,8 @@ input  logic                        reset;
 input  logic                        i__push_valid;
 input  logic    [PRIO_WIDTH-1:0]    i__push_priority;
 input  logic    [DATA_WIDTH-1:0]    i__push_data;
-output logic                        o__enqueue_ready;
-output logic                        o__enqueue_ready__next;
+output logic                        o__push_ready;
+output logic                        o__push_ready__next;
 input  logic    [PRIO_WIDTH-1:0]    i__reinsert_priority;
 
 
@@ -118,8 +118,8 @@ PifoEntry                           r__buffer__pff          [NUM_ELEMENTS-1:0];
 //------------------------------------------------------------------------------
 // Output assignments
 //------------------------------------------------------------------------------
-assign o__enqueue_ready         = ~r__full__pff & (~reset);         // When reset, ready should be low
-assign o__enqueue_ready__next   = ~w__full__next;
+assign o__push_ready            = ~r__full__pff & (~reset);         // When reset, ready should be low
+assign o__push_ready__next      = ~w__full__next;
 assign o__pop_valid             = ~r__empty__pff;                   // When reset, this _will_ be low
 assign o__pop_data              = r__buffer__pff[0].data;
 assign o__pop_priority          = r__buffer__pff[0].prio;
@@ -132,7 +132,7 @@ begin
     // [ssub] For now, we assume upto one of these signals can be true in
     // any particular clock cycle, but not both. Bad things will happen 
     // if this assumption is violated.
-    w__push     = i__push_valid && o__enqueue_ready;
+    w__push     = i__push_valid && o__push_ready;
     w__pop      = o__pop_valid && i__pop;
     w__reinsert = (i__reinsert_priority != '0);                     // We use this signal purely for computing 
                                                                     // next cycle buffer count.
@@ -153,7 +153,7 @@ begin
               (~w__push && ~w__reinsert && ~w__pop) )
         w__pifo_count__next = r__pifo_count__pff;
     else if (w__push && w__reinsert && ~w__pop)
-        w__pifo_count__next = r__pifo_count__pff + 2;
+        w__pifo_count__next = r__pifo_count__pff + 2'b10;   // add 2
     else if (~w__push && ~w__reinsert && w__pop)
         w__pifo_count__next = r__pifo_count__pff - 1'b1;
 end
