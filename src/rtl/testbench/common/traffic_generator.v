@@ -59,7 +59,7 @@ linear_feedback_shift_register
     .clk                (clk),
     .reset              (reset),
     .i__seed            (w__config.injrate_seed),
-    .i__next            (w__generate_packet),
+    .i__next            (i__generate_phase),
     .o__value           (w__lfsr_injrate)
 );
 
