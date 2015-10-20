@@ -223,7 +223,7 @@ begin
     w__traffic_generator_config.total_packets    = MAX_PACKETS;
 
     w__reinsert_generator_config.pkt_pointer_seed = PKT_POINTER_SEED;
-    w__reinsert_generator_config.priority_seed    = PRIORITY_SEED;
+    w__reinsert_generator_config.priority_seed    = PRIORITY_SEED2;
     w__reinsert_generator_config.injrate_seed     = PKT_RIRATE_SEED;
     w__reinsert_generator_config.injrate          = PKT_RIRATE;
     w__reinsert_generator_config.total_packets    = MAX_PACKETS;
@@ -259,7 +259,7 @@ begin: simulation_control_flow
     #(`CYCLE*num_sim_cycles)
 
     // Monitor any signals you want
-    $monitor("\n\n======= STATS =======\nTotal packets generated: %d\nTotal packets received: %d\n\n", tg.r__num_pkts_sent__pff, tr.r__num_pkts_recvd__pff);
+    $monitor("\n\n======= STATS =======\nTotal packets generated: %d\nTotal packets reinserted: %d\nTotal packets received: %d\n\n", tg.r__num_pkts_sent__pff, rig.r__num_pkts_sent__pff, tr.r__num_pkts_recvd__pff);
     
     #(`CYCLE)
     $finish();
