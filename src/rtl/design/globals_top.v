@@ -5,7 +5,7 @@ timeprecision 1ps;
 
 `define MAX(x, y) ((x>=y) ? (x) : (y))
 
-package PifoPkg;
+package FlowPifoPkg;
 
 localparam  MAX_PACKET_PRIORITY     =   (255);  // Packet priorities should be in the range [0, MAX_PACKET_PRIORITY] (integers)
 localparam  PRIORITY_WIDTH          =   $clog2(MAX_PACKET_PRIORITY+1);  

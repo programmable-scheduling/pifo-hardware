@@ -9,7 +9,8 @@ module traffic_generator (
 
     o__packet_pointer,
     o__packet_priority,
-    o__valid_packet_generated
+    o__valid_packet_generated,
+    o__num_pkts_sent;
 );
 
 `include "pifo_tb_headers.vh"
@@ -45,6 +46,7 @@ CounterSignal           r__num_pkts_sent__pff;
 assign  o__packet_pointer           = w__packet_pointer;
 assign  o__packet_priority          = w__packet_priority;
 assign  o__valid_packet_generated   = w__generate_packet;
+assign  o__num_pkts_sent            = r__num_pkts_sent__pff;
 
 //------------------------------------------------------------------------------
 // Sub-modules 

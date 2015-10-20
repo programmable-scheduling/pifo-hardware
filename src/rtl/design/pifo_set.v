@@ -16,7 +16,7 @@
 // The pifo-set effectively supports upto 2 inserts (push) and 1 dequeue (pop)
 // in the same cycle (you can have any combination of upto 2 inserts + 1 dequeue).
 //------------------------------------------------------------------------------
-module pifo_base (
+module pifo_set (
     //--------------------------------------------------------------------------
     // Global signals
     //--------------------------------------------------------------------------
@@ -195,8 +195,10 @@ end
 // Pick higher and lower entry
 always_comb
 begin
-    w__enq_high_entry = '0;
-    w__enq_low_entry  = '0;
+    w__enq_high_entry.prio = '0;
+    w__enq_high_entry.data = '0;
+    w__enq_low_entry.prio  = '0;
+    w__enq_low_entry.data  = '0;
 
     if (w__push && w__reinsert)
     begin
@@ -228,7 +230,7 @@ begin
 end
 
 // Enqueue indices computation
-integer idx;
+integer idx1;
 always_comb
 begin
     if (w__enq_high_entry.prio > r__buffer__pff[0].prio)
@@ -238,13 +240,14 @@ begin
     else
     begin
         w__enq_high_idx = r__pifo_count__pff;
-        for(idx = 0; idx < NUM_ELEMENTS; idx = idx + 1)
-        	if ((idx < r__pifo_count__pff) && (w__enq_high_entry.prio < r__buffer__pff[idx].prio))
-        		w__enq_high_idx = idx;
+        for(idx1 = 0; idx1 < NUM_ELEMENTS; idx1 = idx1 + 1)
+        	if ((idx1 < r__pifo_count__pff) && (w__enq_high_entry.prio < r__buffer__pff[idx1].prio))
+        		w__enq_high_idx = idx1;
         w__enq_high_idx = w__enq_high_idx + 1'b1;
     end
 end
 
+integer idx2;
 always_comb
 begin
     // By construction w__enq_high_idx >= w__enq_low_idx
@@ -255,9 +258,9 @@ begin
     else
     begin
         w__enq_low_idx = r__pifo_count__pff;
-        for(idx = 0; idx < NUM_ELEMENTS; idx = idx + 1)
-        	if ((idx < r__pifo_count__pff) && (w__enq_low_entry.prio < r__buffer__pff[idx].prio))
-        		w__enq_low_idx = idx;
+        for(idx2 = 0; idx2 < NUM_ELEMENTS; idx2 = idx2 + 1)
+        	if ((idx2 < r__pifo_count__pff) && (w__enq_low_entry.prio < r__buffer__pff[idx2].prio))
+        		w__enq_low_idx = idx2;
         w__enq_low_idx = w__enq_low_idx + 1'b1;
     end
 end
