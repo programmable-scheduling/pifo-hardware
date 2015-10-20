@@ -235,7 +235,7 @@ always_comb
 begin
     if (w__enq_high_entry.prio > r__buffer__pff[0].prio)
     begin
-    	w__enq_high_idx = '0;
+    	w__enq_high_idx = w__pop ? 1'b1 : '0;
     end
     else
     begin
@@ -253,7 +253,7 @@ begin
     // By construction w__enq_high_idx >= w__enq_low_idx
     if (w__enq_low_entry.prio > r__buffer__pff[0].prio)
     begin
-    	w__enq_low_idx = '0;
+    	w__enq_low_idx = w__pop ? 1'b1 : '0;
     end
     else
     begin
