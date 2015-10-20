@@ -10,10 +10,10 @@ module traffic_generator (
     o__packet_pointer,
     o__packet_priority,
     o__valid_packet_generated,
-    o__num_pkts_sent;
+    o__num_pkts_sent
 );
 
-`include "pifo_tb_headers.vh"
+`include "common_tb_headers.vh"
 
 //------------------------------------------------------------------------------
 // Interface signals
@@ -28,6 +28,7 @@ input  logic            i__pifo_ready;
 output PacketPointer    o__packet_pointer;
 output Priority         o__packet_priority;
 output logic            o__valid_packet_generated;
+output CounterSignal    o__num_pkts_sent;
 
 //------------------------------------------------------------------------------
 // Internal signals

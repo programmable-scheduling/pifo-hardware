@@ -13,7 +13,7 @@ module traffic_receiver (
     o__dequeue
 );
 
-`include "pifo_tb_headers.vh"
+`include "common_tb_headers.vh"
 
 //------------------------------------------------------------------------------
 // Interface signals
