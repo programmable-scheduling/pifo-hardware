@@ -17,7 +17,7 @@ echo "======End Set Clock Period======\n"
 
 # set clock period [ns]
 create_clock \
-    -period                             0.95 \
+    -period                             ${CLOCK_PERIOD} \
     -name                               master_clk \
     clk
 
