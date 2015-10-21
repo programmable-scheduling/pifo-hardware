@@ -1,0 +1,8 @@
+
+TOPLEVEL := pifo_set
+
+RTL_FILES_ROOT := $(PROJ_DIR)/src/rtl/design
+
+RTL_FILES := \
+	$(RTL_FILES_ROOT)/globals_top.v \
+	$(RTL_FILES_ROOT)/pifo_set.v
