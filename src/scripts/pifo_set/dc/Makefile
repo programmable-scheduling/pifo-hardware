@@ -19,11 +19,15 @@ include Makefile.common
 # get source verilog filenames and toplevel module name
 include Makefile.include
 
+# default clock frequency of 1 GHz
+CLOCK_PERIOD 	= 1.0
+IS_SET_FROM_CMD	= 0
+
 #--------------------------------------------------------------------
 # Build rules
 #--------------------------------------------------------------------
 
-build_suffix   := $(shell date +%Y-%m-%d_%H-%M)
+build_suffix   := $(shell date +%Y-%m-%d_%H-%M-%S)
 build_dir      := build-$(build_suffix)
 curr_build_dir := current
 curr_build_dir_tstamp := current/timestamp.txt
@@ -35,10 +39,12 @@ scripts        := $(synth_tcl) $(libs_tcl) $(synth_sdc)
 makegen_tcl    := make_generated_vars.tcl
 
 synth_vars = \
-	set DESIGN_RTL_DIR  { $(RTL_FILES_ROOT) }; \
+	set DESIGN_RTL_DIR  { $(RTL_FILES_ROOT) $(SEARCH_PATHS) }; \
 	set DESIGN_RTL      { $(RTL_FILES) }; \
 	set DESIGN_TOPLEVEL $(TOPLEVEL); \
 	set SYNTH_LIB       { $(SYNTH_LIB) }; \
+	set CLOCK_PERIOD	$(CLOCK_PERIOD); \
+	set IS_SET_FROM_CMD $(IS_SET_FROM_CMD); \
 
 define new-build-dir-cmds
 	mkdir $(build_dir)
@@ -57,7 +63,7 @@ new-build-dir :
 synth : $(vsrcs) $(scripts) 
 	$(new-build-dir-cmds)
 	cd $(curr_build_dir); \
-	dc_shell-xg-t $(OPTS) < $(synth_tcl) | tee dc.log; \
+	dc_shell-xg-t -64bit $(OPTS) -f $(synth_tcl) | tee dc.log; \
 
 
 junk += 

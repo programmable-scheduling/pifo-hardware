@@ -8,15 +8,35 @@
 # and then display
 
 source make_generated_vars.tcl
-echo ${DESIGN_RTL_DIR}
-echo ${DESIGN_RTL}
-echo ${DESIGN_TOPLEVEL}
+
+echo "================================="
+echo ${DESIGN_RTL_DIR} "\n"
+echo ${DESIGN_RTL} "\n"
+echo ${DESIGN_TOPLEVEL} "\n"
+echo "================================="
+
+set_host_options \
+    -max_cores                          10
 
 # The library setup is kept in a separate tcl file which we now source
 
 source libs.tcl
 
-set hdlin_auto_save_templates true
+set alib_library_analysis_path          "/homes/owenhsin/share/ibm_soi12s0_alib/alib"
+
+set hdlin_sverilog_std                  2009
+set hdlin_ff_always_async_set_reset     true
+set hdlin_ff_always_sync_set_reset      true
+set hdlin_auto_save_templates           true
+#set hdlin_mux_size_limit 128
+# set hdlin_check_no_latch true
+set verilogout_show_unconnected_pins    true
+set compile_fix_multiple_port_ets       true
+
+set fsm_auto_inferring true
+set fsm_enable_state_minimization true
+set fsm_export_formality_state_info true
+
 # set hdlin_check_no_latch true
 define_name_rules nameRules -restricted "!@#$%^&*()\\-" -case_insensitive
 set verilogout_show_unconnected_pins "true"
@@ -26,7 +46,7 @@ define_design_lib WORK -path analyzed
 
 # These two commands read in your verilog source and elaborate it
 
-analyze -f sverilog ${DESIGN_RTL}
+analyze -f sverilog ${DESIGN_RTL} -vcs "+define+USE_STDCELL_LATCH"
 elaborate -lib WORK ${DESIGN_TOPLEVEL} -update
 #elaborate -lib WORK router -update
 
@@ -48,14 +68,35 @@ check_design
 
 source synth.sdc
 
+report_timing -loops
+
 # This actually does the synthesis. The -effort option indicates 
 # how much time the synthesizer should spend optimizing your design to
 # gates. Setting it to high means synthesis will take longer but will
 # probably produce better results.
 
-compile -map_effort medium 
+echo "======START COMPILATION===========================\n\n\n"
+#list_designs
+
+#current_design omnic_I_ace_slave_ACEInt_slave_
+#compile_ultra -timing_high_effort_script
+
+set_ungroup omnic_I_ace_slave_ACEInt_slave_ false
+
+#current_design l2_omnic
+compile_ultra -timing_high_effort_script
+
+#compile -map_effort medium 
 #compile -map_effort high
 #compile_ultra -timing_high_effort_script -no_autoungroup
+#compile_ultra
+#compile_ultra -no_autoungroup
+#compile_ultra -timing_high_effort_script
+
+echo "======END COMPILATION=============================\n\n\n"
+
+
+report_timing -loops
 
 # Make sure we are at the top level
 set current_design  ${DESIGN_TOPLEVEL}
@@ -74,7 +115,7 @@ write_sdc [format "%s%s" ${DESIGN_TOPLEVEL} ".gate.sdc"]
 # an area report for each reference in the heirachy and a DRC report
 
 report_timing > [format "%s%s" ${DESIGN_TOPLEVEL} ".timing.rpt"]
-report_area > [format "%s%s" ${DESIGN_TOPLEVEL} ".area.rpt"]
+report_area -hierarchy > [format "%s%s" ${DESIGN_TOPLEVEL} ".area.rpt"]
 report_power > [format "%s%s" ${DESIGN_TOPLEVEL} ".power.rpt"]
 
 # Used to exit the Design Compiler 
