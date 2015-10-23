@@ -173,8 +173,8 @@ always_comb
 begin
     w__enq_idx = NUM_ELEMENTS;
 
-    // Check if less than least element
-    if (i__data_in_priority < r__buffer__pff[0].prio)
+    // Check if less than equal to least element
+    if (i__data_in_priority <= r__buffer__pff[0].prio)
     begin
     	w__enq_idx = '0;
     end
