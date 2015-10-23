@@ -1,7 +1,7 @@
 
 # Name of the testbench
-TESTBENCH_FOLDER= pifo
-TESTBENCH		= pifo
+TESTBENCH_FOLDER= pifo_set
+TESTBENCH		= pifo_set
 INCLUDE_FILE	= $(TESTBENCH_FOLDER)/$(TESTBENCH)_tb.include
 
 # Whether it is a gate level simulation
@@ -33,6 +33,7 @@ VCS_OPTIONS		+= -j16 -O3
 VCS_OPTIONS		+= -o $(SIMV_NAME)
 VCS_OPTIONS		+= +vcs+loopreport +vcs+loopdetect
 VCS_OPTIONS		+= +nospecify
+VCS_OPTIONS		+= +incdir+../design +incdir+pifo_set +incdir+common
 
 ifeq ($(DUMP_WAVE),1)
 	VCS_OPTIONS	+= +define+$(WAVE_FORMAT) -debug_pp -PP
