@@ -133,8 +133,7 @@ begin
     // the same cycle. 
     w__push     = i__push_valid && o__push_ready;
     w__pop      = o__pop_valid && i__pop;
-    w__reinsert = (i__reinsert_priority != '0);                     // We use this signal purely for computing 
-                                                                    // next cycle buffer count.
+    w__reinsert = (i__reinsert_priority != '0);
 end
 
 //------------------------------------------------------------------------------
