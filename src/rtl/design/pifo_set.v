@@ -129,9 +129,8 @@ assign o__pop_priority          = r__buffer__pff[0].prio;
 //------------------------------------------------------------------------------
 always_comb
 begin
-    // [ssub] For now, we assume upto one of these signals can be true in
-    // any particular clock cycle, but not both. Bad things will happen 
-    // if this assumption is violated.
+    // [ssub] All three of these signals can be high in 
+    // the same cycle. 
     w__push     = i__push_valid && o__push_ready;
     w__pop      = o__pop_valid && i__pop;
     w__reinsert = (i__reinsert_priority != '0);                     // We use this signal purely for computing 
