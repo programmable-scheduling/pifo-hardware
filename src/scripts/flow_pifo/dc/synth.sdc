@@ -35,7 +35,7 @@ set_clock_uncertainty                   0.04 \
 #     -clock                              master_clk \
 #     ${input_pins}
 
-# Set suitable driving cell
+# Set driving cell suitably
 # set_driving_cell \
 #     -lib_cell                           \
 #     [all_inputs]

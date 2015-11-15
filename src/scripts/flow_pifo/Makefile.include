@@ -1,0 +1,17 @@
+
+TOPLEVEL := flow_pifo
+
+RTL_FILES_ROOT := $(PROJ_DIR)/src/rtl/design
+
+RTL_FILES := \
+	$(RTL_FILES_ROOT)/globals_top.v \
+	$(RTL_FILES_ROOT)/clock_gater.v \
+	$(RTL_FILES_ROOT)/counter_base.v \
+	$(RTL_FILES_ROOT)/counter.v \
+	$(RTL_FILES_ROOT)/fifo_base.v \
+	$(RTL_FILES_ROOT)/fifo_base_bypass.v \
+	$(RTL_FILES_ROOT)/fifo_init.v \
+	$(RTL_FILES_ROOT)/fifo_bank.v \
+	$(RTL_FILES_ROOT)/flow_pifo.v \
+	$(RTL_FILES_ROOT)/prefetch_buffer.v \
+	$(RTL_FILES_ROOT)/pifo_set.v
