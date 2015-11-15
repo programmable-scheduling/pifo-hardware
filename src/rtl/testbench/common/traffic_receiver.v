@@ -7,7 +7,7 @@ module traffic_receiver (
     i__phase_count,
 
     i__pifo_ready,
-    i__packet_pointer,
+    i__packet_flow_id,
     i__packet_priority,
 
     o__dequeue
@@ -24,7 +24,7 @@ input  TRConfig         i__config;
 input  logic            i__receive_phase;
 input  CounterSignal    i__phase_count;
 input  logic            i__pifo_ready;
-input  PacketPointer    i__packet_pointer;
+input  FlowId           i__packet_flow_id;
 input  Priority         i__packet_priority;
 output logic            o__dequeue;
 

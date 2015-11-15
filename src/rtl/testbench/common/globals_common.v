@@ -1,8 +1,7 @@
 package CommonTbPkg;
 
-// TODO Make this generic to generate any metadata
-import FlowPifoPkg::PacketPointer;
 import FlowPifoPkg::Priority;
+import FlowPifoPkg::FlowId;
 
 // ssub: Whichever testbench is using the traffic generator/receiver should
 // define an InterfacePkg and set these appropriately.
@@ -11,7 +10,7 @@ import InterfacePkg::EjectionRate;
 import InterfacePkg::CounterSignal;
 
 typedef struct {
-    PacketPointer   pkt_pointer_seed;
+    FlowId          flow_id_seed;
     Priority        priority_seed; 
     InjectionRate   injrate_seed;
 

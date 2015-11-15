@@ -7,7 +7,7 @@ module traffic_generator (
     i__phase_count,
     i__pifo_ready,
 
-    o__packet_pointer,
+    o__packet_flow_id,
     o__packet_priority,
     o__valid_packet_generated,
     o__num_pkts_sent
@@ -25,7 +25,7 @@ input  logic            i__generate_phase;
 input  CounterSignal    i__phase_count;
 input  logic            i__pifo_ready;
 
-output PacketPointer    o__packet_pointer;
+output FlowId           o__packet_flow_id;
 output Priority         o__packet_priority;
 output logic            o__valid_packet_generated;
 output CounterSignal    o__num_pkts_sent;
@@ -35,7 +35,7 @@ output CounterSignal    o__num_pkts_sent;
 //------------------------------------------------------------------------------
 TGConfig                w__config;
 InjectionRate           w__lfsr_injrate;
-PacketPointer           w__packet_pointer;
+FlowId                  w__packet_flow_id;
 Priority                w__packet_priority;
 logic                   w__generate_packet;
 
@@ -44,7 +44,7 @@ CounterSignal           r__num_pkts_sent__pff;
 //------------------------------------------------------------------------------
 // Output signal assignments
 //------------------------------------------------------------------------------
-assign  o__packet_pointer           = w__packet_pointer;
+assign  o__packet_flow_id           = w__packet_flow_id;
 assign  o__packet_priority          = w__packet_priority;
 assign  o__valid_packet_generated   = w__generate_packet;
 assign  o__num_pkts_sent            = r__num_pkts_sent__pff;
@@ -76,13 +76,13 @@ linear_feedback_shift_register
 
 linear_feedback_shift_register 
 #(
-    .NUM_BITS           ($bits(PacketPointer))
+    .NUM_BITS           ($bits(FlowId))
 ) lfsr_pkt_pointer (
     .clk                (clk),
     .reset              (reset),
-    .i__seed            (w__config.pkt_pointer_seed),
+    .i__seed            (w__config.flow_id_seed),
     .i__next            (w__generate_packet),
-    .o__value           (w__packet_pointer)
+    .o__value           (w__packet_flow_id)
 );
 
 //------------------------------------------------------------------------------
