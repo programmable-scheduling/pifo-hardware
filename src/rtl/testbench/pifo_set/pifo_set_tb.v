@@ -50,11 +50,11 @@ TGConfig                                w__reinsert_generator_config;
 TRConfig                                w__traffic_receiver_config;
 
 
-PacketPointer                           w__enqueue_packet_pointer;
+FlowId                                  w__enqueue_flow_id;
 Priority                                w__enqueue_packet_priority;
 logic                                   w__enqueue;
 
-PacketPointer                           w__dequeue_packet_pointer;
+FlowId                                  w__dequeue_flow_id;
 Priority                                w__dequeue_packet_priority;
 logic                                   w__dequeue;
 
@@ -84,21 +84,24 @@ CounterSignal                           r__last_reinsert_packet_count__pff;
 pifo_set #(
     .NUM_ELEMENTS                       (NUM_ELEMENTS),
     .MAX_PRIORITY                       (MAX_PACKET_PRIORITY),
-    .DATA_WIDTH                         ($bits(PacketPointer))          // strictly, we don't care about this for this test
+    .DATA_WIDTH                         ($bits(FlowId))
 ) pf (
     .clk                                (clk),
     .reset                              (reset),
 
     .i__push_valid                      (w__enqueue),              
     .i__push_priority                   (w__enqueue_packet_priority),
-    .i__push_data                       (w__enqueue_packet_pointer),
-    .o__push_ready                      (w__pifo_push_ready),              
-    .o__push_ready__next                (),        
-    .i__reinsert_priority               (w__reinsert ? w__reinsert_packet_priority : '0),       
+    .i__push_flow_id                    (w__enqueue_flow_id),
+    .o__push_flow_empty                 (),                             // Unused: OK
+
+    .o__pifo_set_ready                  (w__pifo_push_ready),              
+    .o__pifo_set_ready__next            (),        
+    .i__reinsert_valid                  (w__reinsert), 
+    .i__reinsert_priority               (w__reinsert_packet_priority),       
 
     .o__pop_valid                       (w__pifo_pop_valid),               
     .o__pop_priority                    (w__dequeue_packet_priority),
-    .o__pop_data                        (w__dequeue_packet_pointer),
+    .o__pop_flow_id                     (w__dequeue_flow_id),
     .i__pop                             (w__dequeue),                     
     .i__clear_all                       ()
 );
@@ -115,7 +118,7 @@ traffic_generator tg (
     .i__phase_count                     (r__phase_count__pff),
     .i__pifo_ready                      (~w__pifo_full),
 
-    .o__packet_pointer                  (w__enqueue_packet_pointer),
+    .o__packet_flow_id                  (w__enqueue_flow_id),
     .o__packet_priority                 (w__enqueue_packet_priority),
     .o__valid_packet_generated          (w__enqueue),
     .o__num_pkts_sent                   ()
@@ -130,7 +133,7 @@ traffic_generator rig (
     .i__phase_count                     (r__phase_count__pff),
     .i__pifo_ready                      (w__dequeue),
 
-    .o__packet_pointer                  (),                             // don't require this for this test
+    .o__packet_flow_id                  (),                             // don't require this for this test
     .o__packet_priority                 (w__reinsert_packet_priority),
     .o__valid_packet_generated          (w__reinsert),
     .o__num_pkts_sent                   (w__reinserted_packet_count)
@@ -147,7 +150,7 @@ traffic_receiver tr (
 
     .i__pifo_ready                      (~w__pifo_empty),
     .i__packet_priority                 (w__dequeue_packet_priority),
-    .i__packet_pointer                  (w__dequeue_packet_pointer),
+    .i__packet_flow_id                  (w__dequeue_flow_id),
 
     .o__dequeue                         (w__dequeue)
 );
@@ -176,10 +179,11 @@ begin
     w__phase__next      = r__phase__pff;
     w__last_reinsert_packet_count__next   
                         = r__last_reinsert_packet_count__pff;
-    if (w__pifo_full)
-    	w__phase__next  = REINSERT;
-    else if (w__pifo_empty)
+
+    if (w__pifo_empty)
     	w__phase__next  = GENERATE;
+    else if (w__pifo_full)
+    	w__phase__next  = REINSERT;
     else if ((r__phase__pff == REINSERT) && (w__reinserted_packet_count != r__last_reinsert_packet_count__pff)
                 && (w__reinserted_packet_count % NUM_ELEMENTS == 0))   // NOTE: Not synthesizable (or atleast not easily)
     begin
@@ -216,21 +220,21 @@ end
 
 always_comb
 begin
-    w__traffic_generator_config.pkt_pointer_seed = PKT_POINTER_SEED;
-    w__traffic_generator_config.priority_seed    = PRIORITY_SEED;
-    w__traffic_generator_config.injrate_seed     = PKT_INJRATE_SEED;
-    w__traffic_generator_config.injrate          = PKT_INJRATE;
-    w__traffic_generator_config.total_packets    = MAX_PACKETS;
+    w__traffic_generator_config.flow_id_seed        = PKT_FLOWID_SEED;
+    w__traffic_generator_config.priority_seed       = PRIORITY_SEED;
+    w__traffic_generator_config.injrate_seed        = PKT_INJRATE_SEED;
+    w__traffic_generator_config.injrate             = PKT_INJRATE;
+    w__traffic_generator_config.total_packets       = MAX_PACKETS;
 
-    w__reinsert_generator_config.pkt_pointer_seed = PKT_POINTER_SEED;
-    w__reinsert_generator_config.priority_seed    = PRIORITY_SEED2;
-    w__reinsert_generator_config.injrate_seed     = PKT_RIRATE_SEED;
-    w__reinsert_generator_config.injrate          = PKT_RIRATE;
-    w__reinsert_generator_config.total_packets    = MAX_PACKETS;
+    w__reinsert_generator_config.flow_id_seed       = PKT_FLOWID_SEED;
+    w__reinsert_generator_config.priority_seed      = PRIORITY_SEED2;
+    w__reinsert_generator_config.injrate_seed       = PKT_RIRATE_SEED;
+    w__reinsert_generator_config.injrate            = PKT_RIRATE;
+    w__reinsert_generator_config.total_packets      = MAX_PACKETS;
 
 
-    w__traffic_receiver_config.ejrate_seed       = PKT_EJRATE_SEED;
-    w__traffic_receiver_config.ejrate            = PKT_EJRATE;
+    w__traffic_receiver_config.ejrate_seed          = PKT_EJRATE_SEED;
+    w__traffic_receiver_config.ejrate               = PKT_EJRATE;
 end
 
 //------------------------------------------------------------------------------

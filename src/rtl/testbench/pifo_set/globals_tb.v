@@ -4,7 +4,7 @@ package PifoSetTbPkg;
 
 localparam  PRIORITY_SEED       = 8'b00000010;      // Number of bits needs to be set based on MAX_PACKET_PRIORITY
 localparam  PRIORITY_SEED2      = 8'b01000010;
-localparam  PKT_POINTER_SEED    = 8'b00001100;
+localparam  PKT_FLOWID_SEED     = 2'b10;
 localparam  PKT_INJRATE_SEED    = 10'b0010001001;
 localparam  PKT_EJRATE_SEED     = 10'b1000100101;
 localparam  PKT_RIRATE_SEED     = 10'b1110100100;
