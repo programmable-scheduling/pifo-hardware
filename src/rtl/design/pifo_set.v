@@ -28,9 +28,14 @@ module pifo_set (
     //--------------------------------------------------------------------------
     i__push_valid,              // assert true, if you want to enqueue
     i__push_priority,
-    i__push_data,
-    o__push_ready,              // true, if pifo is not full: safe to enqueue
-    o__push_ready__next,        // [ssub]  Remove if unnecessary, but I think it may be useful
+    i__push_flow_id,
+    o__push_flow_empty,         // Is the flow-id corresponding to the push flow id
+                                // empty currently? 
+
+    o__pifo_set_ready,          // true, if pifo-set is not full: safe to enqueue
+    o__pifo_set_ready__next,    // [ssub]  Remove if unnecessary, but I think it may be useful
+
+    i__reinsert_valid,
     i__reinsert_priority,       // we know the popped "index" from the output interface; no need 
                                 // to pass it again
 
@@ -39,7 +44,7 @@ module pifo_set (
     //--------------------------------------------------------------------------
     o__pop_valid,               // true, if pifo-set is not empty ie. valid packet available for dequeue
     o__pop_priority,
-    o__pop_data,
+    o__pop_flow_id,
     i__pop,                     // assert true, if you want to dequeue
     i__clear_all                // clear pifo
 );
@@ -77,9 +82,11 @@ input  logic                        reset;
 //------------------------------------------------------------------------------
 input  logic                        i__push_valid;
 input  logic    [PRIO_WIDTH-1:0]    i__push_priority;
-input  logic    [DATA_WIDTH-1:0]    i__push_data;
-output logic                        o__push_ready;
-output logic                        o__push_ready__next;
+input  logic    [DATA_WIDTH-1:0]    i__push_flow_id;
+output logic                        o__push_flow_empty;
+output logic                        o__pifo_set_ready;
+output logic                        o__pifo_set_ready__next;
+input  logic                        i__reinsert_valid;
 input  logic    [PRIO_WIDTH-1:0]    i__reinsert_priority;
 
 
@@ -88,7 +95,7 @@ input  logic    [PRIO_WIDTH-1:0]    i__reinsert_priority;
 //------------------------------------------------------------------------------
 output logic                        o__pop_valid;
 output logic    [PRIO_WIDTH-1:0]    o__pop_priority;
-output logic    [DATA_WIDTH-1:0]    o__pop_data;
+output logic    [DATA_WIDTH-1:0]    o__pop_flow_id;
 input  logic                        i__pop;
 input  logic                        i__clear_all;
 
@@ -103,6 +110,12 @@ logic           [IDX_WIDTH-1:0]     w__enq_low_idx;
 PifoEntry                           w__enq_high_entry;
 PifoEntry                           w__enq_low_entry;
 
+logic                               w__pifo_set_ready;
+logic                               w__pifo_set_ready__next;
+logic                               w__pop_valid;
+logic           [DATA_WIDTH-1:0]    w__pop_flow_id;
+logic           [PRIO_WIDTH-1:0]    w__pop_priority;
+
 //------------------------------------------------------------------------------
 // States and next signals
 //------------------------------------------------------------------------------
@@ -113,16 +126,32 @@ logic                               r__full__pff;
 logic           [IDX_WIDTH-1:0]     r__pifo_count__pff;
 logic           [IDX_WIDTH-1:0]     w__pifo_count__next; 
 
+logic           [NUM_ELEMENTS-1:0]  r__valid__pff;
+logic           [NUM_ELEMENTS-1:0]  r__valid__next;
+
 PifoEntry                           r__buffer__pff          [NUM_ELEMENTS-1:0];
 
 //------------------------------------------------------------------------------
 // Output assignments
 //------------------------------------------------------------------------------
-assign o__push_ready            = ~r__full__pff & (~reset);         // When reset, ready should be low
-assign o__push_ready__next      = ~w__full__next;
-assign o__pop_valid             = ~r__empty__pff;                   // When reset, this _will_ be low
-assign o__pop_data              = r__buffer__pff[0].data;
-assign o__pop_priority          = r__buffer__pff[0].prio;
+assign o__pifo_set_ready        =   w__pifo_set_ready; 
+assign o__pifo_set_ready__next  =   w__pifo_set_ready__next;
+assign o__pop_valid             =   w__pop_valid;
+assign o__pop_flow_id           =   w__pop_flow_id;
+assign o__pop_priority          =   w__pop_priority;
+assign o__push_flow_empty       =   ~r__valid__pff[i__push_flow_id];
+
+//------------------------------------------------------------------------------
+// Output signals
+//------------------------------------------------------------------------------
+always_comb
+begin
+    w__pifo_set_ready        = ~r__full__pff & (~reset);            // When reset, ready should be low
+    w__pifo_set_ready__next  = ~w__full__next;                                                        
+    w__pop_valid             = ~r__empty__pff;                      // When reset, this _will_ be low
+    w__pop_flow_id           = r__buffer__pff[0].data;
+    w__pop_priority          = r__buffer__pff[0].prio;
+end
 
 //------------------------------------------------------------------------------
 // Internal push and pop signals
@@ -131,7 +160,7 @@ always_comb
 begin
     // [ssub] All three of these signals can be high in 
     // the same cycle. 
-    w__push     = i__push_valid && o__push_ready;
+    w__push     = i__push_valid && o__pifo_set_ready;
     w__pop      = o__pop_valid && i__pop;
     w__reinsert = (i__reinsert_priority != '0);
 end
@@ -164,6 +193,7 @@ begin
         r__pifo_count__pff <= w__pifo_count__next;
 end
 
+
 //------------------------------------------------------------------------------
 // Internal full and empty states, signals
 //------------------------------------------------------------------------------
@@ -188,6 +218,34 @@ begin
 end
 
 //------------------------------------------------------------------------------
+// Internal valid signals for each flow
+//------------------------------------------------------------------------------
+genvar flow_idx;
+generate for(flow_idx = 0; flow_idx < NUM_ELEMENTS; flow_idx = flow_idx + 1) 
+begin: gen_valid_flow 
+    always_comb
+    begin
+        // [ssub] You cannot compute i__push_valid or i__reinsert_valid
+        // based on r__valid__next[flow_idx] signal. It will lead to a 
+        // combinational loop. Be cognizant of this.
+        if ( (i__push_valid && (i__push_flow_id == flow_idx)) ||
+             (i__reinsert_valid && (w__pop_flow_id == flow_idx)) )
+            r__valid__next[flow_idx]    = 1'b1;
+        else
+            r__valid__next[flow_idx]    = r__valid__pff;
+    end
+    
+    always_ff @(posedge clk)
+    begin
+        if (reset == 1'b1)
+            r__valid__pff[flow_idx] <= 1'b0;
+        else
+            r__valid__pff[flow_idx] <= r__valid__next[flow_idx];
+    end
+end
+endgenerate
+
+//------------------------------------------------------------------------------
 // Pifo next state : Core PIFO logic
 //------------------------------------------------------------------------------
 // Pick higher and lower entry
@@ -203,14 +261,14 @@ begin
         if (i__push_priority > i__reinsert_priority)
         begin
             w__enq_high_entry.prio  = i__push_priority;
-            w__enq_high_entry.data  = i__push_data;
+            w__enq_high_entry.data  = i__push_flow_id;
             w__enq_low_entry.prio   = i__reinsert_priority;
             w__enq_low_entry.data   = r__buffer__pff[0].data;   // TODO Check if this needs to be refetched
         end
         else
         begin
             w__enq_low_entry.prio   = i__push_priority;
-            w__enq_low_entry.data   = i__push_data;
+            w__enq_low_entry.data   = i__push_flow_id;
             w__enq_high_entry.prio  = i__reinsert_priority;
             w__enq_high_entry.data  = r__buffer__pff[0].data;   // TODO Check if this needs to be refetched
         end
@@ -218,7 +276,7 @@ begin
     else if (w__push && ~w__reinsert)
     begin
         w__enq_high_entry.prio = i__push_priority;
-        w__enq_high_entry.data = i__push_data;
+        w__enq_high_entry.data = i__push_flow_id;
     end
     else if (~w__push && w__reinsert)
     begin
