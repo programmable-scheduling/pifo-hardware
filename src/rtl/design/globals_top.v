@@ -12,16 +12,12 @@ localparam  PRIORITY_WIDTH          =   $clog2(MAX_PACKET_PRIORITY+1);
 localparam  PACKET_POINTER_WIDTH    =   (8);
 localparam  NUM_FLOWS               =   (4);
 localparam  FIFO_DEPTH              =   (10);
-localparam  FLOW_ID_WIDTH           =   $clog2(NUM_FLOWS);
+localparam  PREFETCH_BUFFER_DEPTH   =   (1);
+localparam  FLOW_ID_WIDTH           =   $clog2(NUM_FLOWS+1);
 
-typedef logic [PACKET_POINTER_WIDTH-1:0]    PacketPointer;
 typedef logic [PRIORITY_WIDTH-1:0]          Priority;
 typedef logic [FLOW_ID_WIDTH-1:0]           FlowId;
 
-typedef struct packed {
-    PacketPointer   pointer;
-    Priority        prio;
-} Metadata;
 
 endpackage
 

@@ -5,16 +5,13 @@ module flow_pifo (
     i__enqueue,
     i__enqueue_priority,
     i__enqueue_flow_id,
-    i__packet_metadata,
-    i__dequeue,
 
+    i__dequeue,
     o__dequeue_priority,
-    o__packet_pointer,
-    o__pifo_full,
-    o__pifo_empty
+    o__dequeue_flow_id
 );
 
-`include "pifo_headers.vh"
+`include "flow_pifo_headers.vh"
 
 //------------------------------------------------------------------------------
 // Global signals
@@ -27,39 +24,45 @@ input  logic                            reset;
 //------------------------------------------------------------------------------
 input  logic                            i__enqueue;
 input  Priority                         i__enqueue_priority;
-input  PacketPointer                    i__packet_pointer;
 input  FlowId                           i__enqueue_flow_id;
 
 input  logic                            i__dequeue;
-
 output Priority                         o__dequeue_priority;
-output PacketPointer                    o__packet_pointer;
+output FlowId                           o__dequeue_flow_id;
 
-output logic                            o__pifo_full;
-output logic                            o__pifo_empty;
 
 //------------------------------------------------------------------------------
 // Signals
 //------------------------------------------------------------------------------
-logic                                   w__pifo_push_ready;
-logic                                   w__pifo_pop_valid;
+logic                                   w__pifo_set_push_valid;
+Priority                                w__pifo_set_push_priority;
+FlowId                                  w__pifo_set_push_flow_id;
+logic                                   w__pifo_set_push_flow_empty;
+logic                                   w__pifo_set_ready;
+logic                                   w__pifo_set_reinsert_valid;
+Priority                                w__pifo_set_reinsert_priority;
+logic                                   w__pifo_set_pop_valid;
+FlowId                                  w__pifo_set_pop_flow_id;
+Priority                                w__pifo_set_pop_priority;
+logic                                   w__pifo_set_pop;
 
-logic                                   w__pifo_push_valid;
-FlowId                                  w__pifo_push_flow_id;
-FlowId                                  w__pifo_pop_flow_id;
-Priority                                w__pifo_push_priority;
+logic                                   w__prefetch_push_valid;
+logic                                   w__prefetch_push_flow_not_full;
+logic                                   w__prefetch_reinsert_valid;
+Priority                                w__prefetch_reinsert_priority;
+Priority                                w__prefetch_pop_priority;
+logic                                   w__prefetch_pop_priority_valid;
+logic                                   w__prefetch_pop;
 
-Metadata    [NUM_FLOWS-1:0]             w__fifo_data_out;
-logic       [NUM_FLOWS-1:0]             w__fifo_dequeue;            // dequeue signal for each fifo
-logic       [NUM_FLOWS-1:0]             w__fifo_enqueue;            // enqueue signal for each fifo
-                                                                    // require: atmost one of the bits is 1
-                                                                    // currently enforced by construction   [TOASSERT]
+logic                                   w__fifobank_push_valid;
+logic                                   w__fifobank_reinsert_valid;
+Priority                                w__fifobank_reinsert_priority;
+Priority                                w__fifobank_pop_priority;
+logic                                   w__fifobank_pop_priority_valid;
+logic                                   w__fifobank_pop;
 
-//------------------------------------------------------------------------------
-// Output assignments
-//------------------------------------------------------------------------------
-assign  o__pifo_full    =   ~w__pifo_push_ready;
-assign  o__pifo_empty   =   ~w__pifo_pop_valid;
+logic                                   w__bypass_prefetch;
+logic                                   w__bypass_fifo;
 
 //------------------------------------------------------------------------------
 // Sub-modules
@@ -68,93 +71,225 @@ pifo_set #(
     .NUM_ELEMENTS           (NUM_FLOWS),
     .MAX_PRIORITY           (MAX_PACKET_PRIORITY),
     .DATA_WIDTH             ($bits(FlowId))
-) base  (
+) pifo  (
     .clk                    (clk),
     .reset                  (reset),
 
-    .i__push_valid          (w__pifo_push_valid),
-    .i__push_priority       (w__pifo_push_priority),
-    .i__push_data           (w__pifo_push_flow_id),
-    .o__push_ready          (w__pifo_push_ready),
-    .o__push_ready__next    (),
-    .i__reinsert_priority   (),
+    // Input interface
+    .i__push_valid          (w__pifo_set_push_valid),
+    .i__push_priority       (w__pifo_set_push_priority),
+    .i__push_flow_id        (w__pifo_set_push_flow_id),
+    .o__push_flow_empty     (w__pifo_set_push_flow_empty),
 
-    .o__pop_valid           (w__pifo_pop_valid),
-    .o__pop_priority        (w__pifo_pop_priority),
-    .o__pop_data            (w__pifo_pop_flow_id),
-    .i__pop                 (w__pifo_pop_ready),
-    .i__clear_all           ()
+    .o__pifo_set_ready      (w__pifo_set_ready),
+    .o__pifo_set_ready__next(),
+
+    .i__reinsert_priority   (w__pifo_set_reinsert_priority),
+    .i__reinsert_valid      (w__pifo_set_reinsert_valid),
+
+    // Output interface
+    .o__pop_valid           (w__pifo_set_pop_valid),
+    .o__pop_priority        (w__pifo_set_pop_priority),
+    .o__pop_flow_id         (w__pifo_set_pop_flow_id),
+    .i__pop                 (w__pifo_set_pop),
+    .i__clear_all           ()                                                  // unused: OK
 );
 
-// [ssub] The fifos have to be bypass enabled. Or there has to be
-// a separate bypass mechanism in the pre-fetch modules.
-// Why? Say flow 1 is highest priority and has exactly 1 element.
-// Cycle 0: Enqueue a packet to flow 1
-// Cycle 0: Dequeue a packet from flow 1
-// We need to re-insert flow 1 with new priority (of the new incoming
-// packet) in this very cycle. We cannot defer it to the next
-// cycle.  FIXME 
-genvar flow_idx;
-generate for(flow_idx = 0; flow_idx < NUM_FLOWS; flow_idx = flow_idx + 1)
-begin: gen_flow_fifo
-fifo #(
-    .BYPASS_ENABLE          (1'b0),
-    .DATA_WIDTH             ($bits(Metadata)),
+prefetch_buffer #(
+    .NUM_FLOWS              (NUM_FLOWS),
+    .DEPTH                  (PREFETCH_BUFFER_DEPTH),
+    .DATA_WIDTH             ($bits(Priority))
+) pre_buf (
+    .clk                    (clk),
+    .reset                  (reset),
+
+    // Input interface
+    .i__push_valid          (w__prefetch_push_valid),
+    .i__push_flow_id        (i__enqueue_flow_id),
+    .i__push_data           (i__enqueue_priority),
+    .o__push_flow_not_full  (w__prefetch_push_flow_not_full),
+
+    .i__reinsert_valid      (w__prefetch_reinsert_valid),
+    .i__reinsert_data       (w__prefetch_reinsert_priority),
+
+    // Output interface
+    .o__pop_data            (w__prefetch_pop_priority),
+    .o__pop_valid           (w__prefetch_pop_priority_valid),
+    .i__pop                 (w__prefetch_pop),
+    .i__pop_flow_id         (w__pifo_set_pop_flow_id)                           // OK
+);
+
+fifo_bank #(
+    .NUM_FLOWS              (NUM_FLOWS),
     .DEPTH                  (FIFO_DEPTH),
-) flow_fifo (
+    .DATA_WIDTH             ($bits(Priority))
+) fifobank (
     .clk                    (clk),
     .reset                  (reset),
 
-    .i__data_in_valid       (w__fifo_enqueue[flow_idx]),
-    .i__data_in             (w__packet_metadata),
-    .o__data_in_ready       (),         // FIXME Add this signal!
-    .o__data_in_ready__next (),
+    // Input interface
+    .i__push_valid          (w__fifobank_push_valid),
+    .i__push_flow_id        (i__enqueue_flow_id),
+    .i__push_data           (i__enqueue_priority),
+    .o__push_flow_not_full  (),                                                 // unused: OK
 
-    o__data_out_valid       (),
-    o__data_out             (w__fifo_data_out[flow_idx]),
-    i__data_out_ready       ()
+    .i__reinsert_valid      (w__fifobank_reinsert_valid),                       // pulled to '0: OK
+    .i__reinsert_data       (w__fifobank_reinsert_priority),                    // pulled to '0: OK
+
+    // Output interface
+    .o__pop_data            (w__fifobank_pop_priority),
+    .o__pop_valid           (w__fifobank_pop_priority_valid),
+    .i__pop                 (w__fifobank_pop),
+    .i__pop_flow_id         (w__pifo_set_pop_flow_id)                           // OK
 );
-end
-endgenerate
-
-//------------------------------------------------------------------------------
-// Output signals
-//------------------------------------------------------------------------------
-assign  o__dequeue_priority = w__pifo_pop_priority;                         // Should be equal to w__fifo_data_out[w__pifo_pop_flow_id].prio [TOASSERT]
-assign  o__packet_pointer   = w__fifo_data_out[w__pifo_pop_flow_id].pointer;
 
 
 //------------------------------------------------------------------------------
-// Flow fifo signals
+// Output assignments
 //------------------------------------------------------------------------------
-genvar fid;
-generate for (fid = 0; fid < NUM_FLOWS; fid = fid + 1)
-begin: gen_flow_fifo_signal
+assign  o__dequeue_priority = w__pifo_set_pop_priority;
+assign  o__dequeue_flow_id  = w__pifo_set_pop_flow_id;
+
+//------------------------------------------------------------------------------
+// Bypass signals
+//------------------------------------------------------------------------------
 always_comb
 begin
-    if (fid == i__enqueue_flow_id)
-        w__fifo_enqueue[fid] = 1'b1;
-    else 
-        w__fifo_enqueue[fid] = 1'b0;
+    if (w__pifo_set_push_flow_empty)                                            // 1. PIFO set entry for the flow being
+    begin                                                                       // enqueued is invalid
+        w__bypass_prefetch      =   1'b1;
+        w__bypass_fifo          =   1'b1;
+    end
+    else if (w__prefetch_push_flow_not_full)                                    // 2. PIFO set entry exists for enqueue flow
+    begin                                                                       // But it's prefetch buffer is not full
+        w__bypass_prefetch      =   1'b0;
+        w__bypass_fifo          =   1'b1;
+    end
+    else                                                                        // 3. PIFO set entry exists for enqueue flow
+    begin                                                                       // And it's prefetch buffer is also full
+        w__bypass_prefetch      =   1'b0;
+        w__bypass_fifo          =   1'b0;
+    end
+end
 
-    if (fid == w__pifo_pop_flow_id)
-        w__fifo_dequeue[fid] = i__dequeue;
-    else
-        w__fifo_dequeue[fid] = 1'b0;
-end // always_comb
-end // generate
-endgenerate
 
 //------------------------------------------------------------------------------
 // Pifo-set signals
 //------------------------------------------------------------------------------
+// Reinsert logic
 always_comb
 begin
-    w__pifo_push_priority   = i__enqueue_priority;
-    w__pifo_push_flow_id    = i__enqueue_flow_id;
-    w__pifo_push_valid      = ;     // FIXME
+    if (w__prefetch_pop_priority_valid ||                                       // 1. Have a valid prefetch entry OR
+            (~w__prefetch_pop_priority_valid && i__enqueue &&                   // 2. Don't have a valid prefetch entry, AND
+              (i__enqueue_flow_id == w__pifo_set_pop_flow_id))                  //    new enqueue flow is the same as popped
+       )                                                                        //    flow.
+        w__pifo_set_reinsert_valid = i__dequeue;
+    else 
+        w__pifo_set_reinsert_valid = 1'b0;
 
-    w__pifo_pop_ready       = i__dequeue;
+    // TODO Assert that if prefetch is empty, then so is the 
+    // corresponding fifo bank.
+end
+
+always_comb
+begin
+    if (w__prefetch_pop_priority_valid)                                         // 1. Prefetch entry is valid, get prio from there
+        w__pifo_set_reinsert_priority   = w__prefetch_pop_priority;
+    else if (~w__prefetch_pop_priority_valid && (i__enqueue_flow_id == w__pifo_set_pop_flow_id))
+        w__pifo_set_reinsert_priority   = i__enqueue_priority;                  // 2. Same as 2, above. Get the enqueue priority
+    else 
+        w__pifo_set_reinsert_priority   = '0;                                   // 3. Neither, ignore reinsert priority
+                                                                                // TODO Assert that w__pifo_set_reinsert_valid = false
+end
+
+// Push logic
+always_comb
+begin
+    // TODO Asserts
+    w__pifo_set_push_flow_id    =   i__enqueue_flow_id;
+    if ((w__pifo_set_push_flow_empty) && i__enqueue)                            // 1. If no valid entry for enqueue flow, push
+        w__pifo_set_push_valid  =   1'b1;                                       // Note that if enqueue flow == popped flow 
+    else                                                                        // by defn w__pifo_set_push_flow_empty = 0
+        w__pifo_set_push_valid  =   1'b0;                                       // and we will fall back to the reinsert mechn.
+end
+
+// Pop logic
+always_comb
+begin
+    w__pifo_set_pop             =   i__dequeue;                                 // Obvious
+end
+
+//------------------------------------------------------------------------------
+// Prefetch buffer signals
+//------------------------------------------------------------------------------
+// Reinsert logic 
+always_comb
+begin
+    if ( ( w__fifobank_pop_priority_valid ||                                    // 1. Fifobank has a valid entry OR
+           (~w__fifobank_pop_priority_valid && i__enqueue &&                    // 2. Fifobank does not have a valid entry AND
+            (i__enqueue_flow_id == w__pifo_set_pop_flow_id))                    //    enqueued flow is same as popped flow.
+         ) &&
+         ~w__bypass_prefetch                                                    // Gate the entire thing by bypass prefetch
+       )
+        w__prefetch_reinsert_valid = i__dequeue;
+    else 
+        w__prefetch_reinsert_valid = 1'b0;
+end
+
+always_comb
+begin
+    if (w__fifobank_pop_priority_valid)                                         // Similar reasoning to pifo-set reinsert
+        w__prefetch_reinsert_priority   = w__fifobank_pop_priority;
+    else if ( (~w__fifobank_pop_priority_valid && (i__enqueue_flow_id == w__pifo_set_pop_flow_id)) &&
+              ~w__bypass_prefetch)
+        w__prefetch_reinsert_priority   = i__enqueue_priority;
+    else 
+        w__prefetch_reinsert_priority   = '0;
+end
+
+// Push logic
+always_comb
+begin
+    // TODO Assert that corresponding fifo is empty
+    if ((w__prefetch_push_flow_not_full) && ~w__bypass_prefetch && i__enqueue)  // Similar reasoning to pifo-set
+        w__prefetch_push_valid  = 1'b1;
+    else
+        w__prefetch_push_valid  = 1'b0;
+end
+
+// Pop logic
+always_comb
+begin
+    w__prefetch_pop             =   i__dequeue;                                 // Obvious
+end
+
+
+//------------------------------------------------------------------------------
+// Fifobank signals
+//------------------------------------------------------------------------------
+// [ssub] I am re-using the logic of the pre-fetch buffer for the fifo bank
+// The fifo bank will have atmost 1 push and 1 pop in any cycle. There is no
+// notion of "re-inserting". We just set reinsert signals to '0 and they should
+// get synthesized away. We can explicitly re-write the fifo bank module if 
+// this does not happen, or if this organization is confusing.
+// Reinsert logic 
+always_comb
+begin
+    w__fifobank_reinsert_valid      = 1'b0;
+    w__fifobank_reinsert_priority   = 1'b0;
+end
+
+// Push logic
+always_comb
+begin
+    if (i__enqueue && ~w__bypass_fifo)  w__fifobank_push_valid  = 1'b1;         // 1. Push to fifobank if there's valid enqueue
+    else                                w__fifobank_push_valid  = 1'b0;         // and bypass is false.
+end
+
+// Pop logic
+always_comb
+begin
+    w__fifobank_pop         =   i__dequeue;                                     // Obvious
 end
 
 endmodule
