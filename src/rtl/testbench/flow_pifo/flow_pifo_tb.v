@@ -25,9 +25,9 @@ module `TESTBENCH_NAME;
 // Local data structures
 //------------------------------------------------------------------------------
 typedef enum logic [1:0] {
+    DRAIN,
 	GENERATE,
-	REINSERT,
-    DRAIN	
+	REINSERT
 } Phase;
 
 //------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ clock_generator
 //------------------------------------------------------------------------------
 always_comb
 begin
-    w__enqueue          =   w__generate || w__reinsert;
+    w__enqueue          =   (r__phase__pff == GENERATE) ? w__generate : (r__phase__pff == REINSERT) ? w__reinsert : 1'b0;
     w__enqueue_flow_id  =   w__generate ? w__generate_packet_flow_id : w__dequeue_flow_id;
     w__enqueue_packet_priority
                         =   w__generate ? w__generate_packet_priority : w__reinsert_packet_priority;
@@ -260,13 +260,13 @@ begin: simulation_control_flow
     reset   = 1'b0;
 
     // Free run the clock
-    #(`CYCLE*3)
+    #(`CYCLE*3.5)
     reset   = 1'b1;
 
     #(`CYCLE*3)
     reset   = 1'b0;
 
-    #(`CYCLE)
+    #(`CYCLE*1.5)
 
     // Determine the specified simulation cycle
     if(!$value$plusargs("NUM_SIM_CYCLES=%d", num_sim_cycles))
