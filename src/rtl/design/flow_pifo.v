@@ -77,7 +77,7 @@ pifo_set #(
 
     // Input interface
     .i__push_valid          (w__pifo_set_push_valid),
-    .i__push_priority       (w__pifo_set_push_priority),
+    .i__push_priority       (i__enqueue_priority),
     .i__push_flow_id        (w__pifo_set_push_flow_id),
     .o__push_flow_empty     (w__pifo_set_push_flow_empty),
 
@@ -92,7 +92,7 @@ pifo_set #(
     .o__pop_priority        (w__pifo_set_pop_priority),
     .o__pop_flow_id         (w__pifo_set_pop_flow_id),
     .i__pop                 (w__pifo_set_pop),
-    .i__clear_all           ()                                                  // unused: OK
+    .i__clear_all           ('0)                                                // pulled to '0: OK
 );
 
 prefetch_buffer #(

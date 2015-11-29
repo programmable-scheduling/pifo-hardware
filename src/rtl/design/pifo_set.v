@@ -162,7 +162,7 @@ begin
     // the same cycle. 
     w__push     = i__push_valid && o__pifo_set_ready;
     w__pop      = o__pop_valid && i__pop;
-    w__reinsert = (i__reinsert_priority != '0);
+    w__reinsert = i__reinsert_valid;
 end
 
 //------------------------------------------------------------------------------
@@ -171,7 +171,9 @@ end
 always_comb
 begin
     w__pifo_count__next = r__pifo_count__pff;
-    if ( (w__push && w__reinsert && w__pop)     || 
+    if (reset == 1'b1)
+        w__pifo_count__next = '0;
+    else if ( (w__push && w__reinsert && w__pop)     || 
          (w__push && ~w__reinsert && ~w__pop)   || 
          (~w__push && w__reinsert && ~w__pop) )
         w__pifo_count__next = r__pifo_count__pff + 1'b1;
@@ -232,7 +234,7 @@ begin: gen_valid_flow
              (i__reinsert_valid && (w__pop_flow_id == flow_idx)) )
             r__valid__next[flow_idx]    = 1'b1;
         else
-            r__valid__next[flow_idx]    = r__valid__pff;
+            r__valid__next[flow_idx]    = r__valid__pff[flow_idx];
     end
     
     always_ff @(posedge clk)
