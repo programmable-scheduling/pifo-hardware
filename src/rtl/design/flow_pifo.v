@@ -222,6 +222,10 @@ end
 //------------------------------------------------------------------------------
 // Prefetch buffer signals
 //------------------------------------------------------------------------------
+// FIXME Documenting this concern here so it can be fixed.
+// Prefetch buffer might be full in this cycle, and a pop occurs.
+// In this case an incoming packet has to bypass fifo (if fifo is also empty).
+// Currently, that will not happen.
 // Reinsert logic 
 always_comb
 begin
