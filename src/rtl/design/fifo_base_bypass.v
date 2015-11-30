@@ -28,6 +28,7 @@ module fifo_base_bypass(
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
+parameter MULTI_ISSUE   = 1'b0;
 parameter DATA_WIDTH    = 64;
 parameter DEPTH         = 3;
 //------------------------------------------------------------------------------
@@ -80,7 +81,8 @@ logic                                   w__data_out_ready;
 fifo_base
     #(
         .DATA_WIDTH                     (DATA_WIDTH),
-        .DEPTH                          (DEPTH)
+        .DEPTH                          (DEPTH),
+        .MULTI_ISSUE                    (MULTI_ISSUE)
     )
     base (
         .clk                            (clk),

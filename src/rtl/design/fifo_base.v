@@ -28,6 +28,7 @@ module fifo_base (
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
+parameter MULTI_ISSUE   = 1'b0;
 parameter DATA_WIDTH    = 64;
 parameter DEPTH         = 3;
 //------------------------------------------------------------------------------
@@ -147,38 +148,97 @@ clock_gater
 //------------------------------------------------------------------------------
 // Internal push and pop signals
 //------------------------------------------------------------------------------
-always_comb
-begin
-    w__push = i__data_in_valid && o__data_in_ready;
-    w__pop  = o__data_out_valid && i__data_out_ready;
+generate
+if (MULTI_ISSUE == 1'b0)
+begin: single_issue_pp
+    always_comb
+    begin
+        w__push = i__data_in_valid && o__data_in_ready;
+        w__pop  = o__data_out_valid && i__data_out_ready;
+    end
 end
+else if (MULTI_ISSUE == 1'b1)
+begin: multi_issue_pp
+    always_comb
+    begin
+        if (o__data_in_ready)
+            w__push = i__data_in_valid;
+        else if (~o__data_in_ready && i__data_out_ready)
+            w__push = i__data_in_valid;
+        else
+            w__push = 1'b0;
+
+        w__pop  = o__data_out_valid && i__data_out_ready;
+    end
+end
+endgenerate
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 // Internal full and empty states
 //------------------------------------------------------------------------------
-always_comb
-begin
-    w__empty__next = r__empty__pff;
-    if(w__push == 1'b1)
+generate
+if (MULTI_ISSUE == 1'b0)
+begin: single_issue_fe
+    always_comb
     begin
-        w__empty__next = 1'b0;
-    end
-    else if((w__pop == 1'b1) && (w__rd_addr_next == w__wr_addr))
-    begin
-        w__empty__next = 1'b1;
-    end
-
-    w__full__next = r__full__pff;
-    if(w__pop == 1'b1)
-    begin
-        w__full__next = 1'b0;
-    end
-    else if((w__push == 1'b1) && (w__wr_addr_next == w__rd_addr))
-    begin
-        w__full__next = 1'b1;
+        w__empty__next = r__empty__pff;
+        if(w__push == 1'b1)
+        begin
+            w__empty__next = 1'b0;
+        end
+        else if((w__pop == 1'b1) && (w__rd_addr_next == w__wr_addr))
+        begin
+            w__empty__next = 1'b1;
+        end
+    
+        w__full__next = r__full__pff;
+        if(w__pop == 1'b1)
+        begin
+            w__full__next = 1'b0;
+        end
+        else if((w__push == 1'b1) && (w__wr_addr_next == w__rd_addr))
+        begin
+            w__full__next = 1'b1;
+        end
     end
 end
+else if (MULTI_ISSUE == 1'b1)
+begin: multi_issue_fe
+    always_comb
+    begin
+        w__empty__next = r__empty__pff;
+        if ((w__push == 1'b1) && (w__pop == 1'b1))
+        begin
+            if (r__empty__pff)  w__empty__next = 1'b1;
+            else                w__empty__next = 1'b0;
+        end
+        else if(w__push == 1'b1)
+        begin
+            w__empty__next = 1'b0;
+        end
+        else if((w__pop == 1'b1) && (w__rd_addr_next == w__wr_addr))
+        begin
+            w__empty__next = 1'b1;
+        end
+
+        w__full__next = r__full__pff;
+        if ((w__pop == 1'b1) && (w__push == 1'b1))
+        begin
+            if (r__full__pff)   w__full__next = 1'b1;
+            else                w__full__next = 1'b0;
+        end
+        else if(w__pop == 1'b1)
+        begin
+            w__full__next = 1'b0;
+        end
+        else if((w__push == 1'b1) && (w__wr_addr_next == w__rd_addr))
+        begin
+            w__full__next = 1'b1;
+        end
+    end
+end
+endgenerate
 
 always_ff @ (posedge clk)
 begin

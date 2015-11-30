@@ -83,6 +83,7 @@ begin: gen_prefetch_fifo
 fifo #(
     .BYPASS_ENABLE          (1'b0),
     .DATA_WIDTH             (DATA_WIDTH),
+    .MULTI_ISSUE            (1'b1),
     .DEPTH                  (DEPTH)
 ) prefetch_fifo (
     .clk                    (clk),

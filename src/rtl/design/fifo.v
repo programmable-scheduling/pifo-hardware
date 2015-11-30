@@ -26,6 +26,7 @@ module fifo(
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
+parameter MULTI_ISSUE   = 1'b0;
 parameter BYPASS_ENABLE = 1'b0;
 parameter DATA_WIDTH    = 64;
 parameter DEPTH         = 3;
@@ -71,7 +72,8 @@ begin: no_bypass
     fifo_base
         #(
             .DATA_WIDTH                 (DATA_WIDTH),
-            .DEPTH                      (DEPTH)
+            .DEPTH                      (DEPTH),
+            .MULTI_ISSUE                (MULTI_ISSUE)
         )
         base(
             .clk                        (clk),
@@ -94,7 +96,8 @@ begin: bypass
     fifo_base_bypass
         #(
             .DATA_WIDTH                 (DATA_WIDTH),
-            .DEPTH                      (DEPTH)
+            .DEPTH                      (DEPTH),
+            .MULTI_ISSUE                (MULTI_ISSUE)
         )
         base (
             .clk                        (clk),

@@ -89,8 +89,9 @@ begin: gen_prefetch_fifo
 fifo #(
     .BYPASS_ENABLE          (1'b0),
     .DATA_WIDTH             (DATA_WIDTH),
+    .MULTI_ISSUE            (1'b0),             // TODO This can optionally be made MULTI_ISSUE
     .DEPTH                  (DEPTH)
-) prefetch_fifo (
+) fifobank_fifo (
     .clk                    (clk),
     .reset                  (reset),
 
