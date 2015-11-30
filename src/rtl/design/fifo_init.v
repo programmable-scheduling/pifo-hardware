@@ -24,6 +24,7 @@ module fifo_init(
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
+parameter MULTI_ISSUE   = 1'b0;
 parameter INIT_VAL      = 1'b0;
 parameter INC_INIT      = 1'b1;
 parameter DATA_WIDTH    = 64;
@@ -90,6 +91,7 @@ logic        [ADDR_WIDTH-1:0]           r__init_addr__pff;
 // Submodules
 //------------------------------------------------------------------------------
 fifo #( .DATA_WIDTH                     (DATA_WIDTH),
+        .MULTI_ISSUE                    (MULTI_ISSUE),
         .DEPTH                          (DEPTH)
     )
     fifo (
