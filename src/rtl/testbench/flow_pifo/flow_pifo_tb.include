@@ -6,7 +6,6 @@ support/globals.v
 support/clock_generator.v
 
 ../design/clock_gater.v
-../design/counter_base.v
 ../design/counter.v
 ../design/fifo.v
 ../design/fifo_base.v
