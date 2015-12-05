@@ -1,4 +1,3 @@
-
 module counter(
     //--------------------------------------------------------------------------
     // Global signals
@@ -50,24 +49,15 @@ output logic [COUNT_WIDTH-1:0]          o__count__next;
 // Internal signals
 //------------------------------------------------------------------------------
 logic [COUNT_WIDTH-1:0]                 w__max_count;
+logic [COUNT_WIDTH-1:0]                 r__count__pff;
+logic [COUNT_WIDTH-1:0]                 w__count__next;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-// Submodules
+// Output assignments
 //------------------------------------------------------------------------------
-counter_base
-    #(
-        .COUNT_WIDTH                    (COUNT_WIDTH),
-        .INIT_VALUE                     (INIT_VALUE)
-    )
-    base(
-        .clk                            (clk),
-        .reset                          (reset),
-        .i__max_count                   (w__max_count),
-        .i__inc                         (i__inc),
-        .o__count                       (o__count),
-        .o__count__next                 (o__count__next)
-    );
+assign o__count         = r__count__pff;
+assign o__count__next   = w__count__next;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -77,6 +67,39 @@ always_comb
 begin
     // To eliminate the 32-bit to ?-bit conversion warnings
     w__max_count = NUM_COUNT - 1'b1;
+end
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// Count logic
+//------------------------------------------------------------------------------
+always_comb
+begin
+    w__count__next = r__count__pff;
+
+    if(i__inc == 1'b1)
+    begin
+        if(r__count__pff == w__max_count)
+        begin
+            w__count__next = '0;
+        end
+        else
+        begin
+            w__count__next = r__count__pff + 1'b1;
+        end
+    end
+end
+
+always_ff @ (posedge clk)
+begin
+    if(reset == 1'b1)
+    begin
+        r__count__pff <= INIT_VALUE;
+    end
+    else
+    begin
+        r__count__pff <= w__count__next;
+    end
 end
 //------------------------------------------------------------------------------
 
