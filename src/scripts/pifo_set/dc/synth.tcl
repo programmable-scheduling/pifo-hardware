@@ -78,12 +78,6 @@ report_timing -loops
 echo "======START COMPILATION===========================\n\n\n"
 #list_designs
 
-#current_design omnic_I_ace_slave_ACEInt_slave_
-#compile_ultra -timing_high_effort_script
-
-set_ungroup omnic_I_ace_slave_ACEInt_slave_ false
-
-#current_design l2_omnic
 compile_ultra -timing_high_effort_script
 
 #compile -map_effort medium 
