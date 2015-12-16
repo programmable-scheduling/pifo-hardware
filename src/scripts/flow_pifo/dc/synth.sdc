@@ -7,8 +7,8 @@
 # input/output delay constraints.
 
 set_units \
-    -capacitance                        pf \
-    -time                               ns
+    -capacitance                        fF \
+    -time                               ps
 
 
 echo "======Start Set Clock Period======\n"
@@ -22,11 +22,11 @@ create_clock \
     clk
 
 # set clock jitter [%]
-set_clock_uncertainty                   0.04 \
+set_clock_uncertainty                   40 \
     -hold \
     [all_clocks]
 
-set_clock_uncertainty                   0.04 \
+set_clock_uncertainty                   40 \
     -setup \
     [all_clocks]
 
@@ -40,12 +40,12 @@ set_clock_uncertainty                   0.04 \
 #     -lib_cell                           \
 #     [all_inputs]
 
-set_max_transition                      0.04 \
+set_max_transition                      40 \
     [all_inputs]
 
-set_max_transition                      0.04 \
+set_max_transition                      40 \
     [all_outputs]
 
 set_load \
-    -pin_load                           0.05 \
+    -pin_load                           10 \
     [all_outputs]

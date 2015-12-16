@@ -20,7 +20,7 @@ include Makefile.common
 include Makefile.include
 
 # default clock frequency of 1 GHz
-CLOCK_PERIOD 	= 1.0
+CLOCK_PERIOD 	= 1000.0
 IS_SET_FROM_CMD	= 0
 
 #--------------------------------------------------------------------
