@@ -54,7 +54,7 @@ module pifo_set (
 //------------------------------------------------------------------------------
 parameter   NUM_ELEMENTS    = (16);
 parameter   MAX_PRIORITY    = (256);
-parameter   DATA_WIDTH      = (8);
+parameter   DATA_WIDTH      = $clog2(NUM_ELEMENTS+1);
 
 //------------------------------------------------------------------------------
 // Constants
