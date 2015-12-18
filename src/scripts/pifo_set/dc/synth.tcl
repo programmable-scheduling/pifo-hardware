@@ -22,8 +22,6 @@ set_host_options \
 
 source libs.tcl
 
-set alib_library_analysis_path          "/homes/owenhsin/share/ibm_soi12s0_alib/alib"
-
 set hdlin_sverilog_std                  2009
 set hdlin_ff_always_async_set_reset     true
 set hdlin_ff_always_sync_set_reset      true
