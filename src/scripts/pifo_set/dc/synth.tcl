@@ -1,5 +1,5 @@
 #=========================================================================
-# TCL Script File for Synthesis using Cadence RTL Compiler
+# TCL Script File for Synthesis using Synopsys Design Compiler
 #-------------------------------------------------------------------------
 
 # 

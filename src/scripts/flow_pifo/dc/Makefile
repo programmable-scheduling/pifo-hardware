@@ -2,7 +2,7 @@
 # 6.375 Makefile for dc-synth
 #-----------------------------------------------------------------------
 #
-# This makefile will use Cadence RTL Compiler to synthesize
+# This makefile will use Synopsys Design Compiler to synthesize
 # your RTL into a gate-level verilog netlist.
 #
 
