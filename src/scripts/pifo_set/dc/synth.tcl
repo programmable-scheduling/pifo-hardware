@@ -1,5 +1,5 @@
 #=========================================================================
-# TCL Script File for Synthesis using Cadence RTL Compiler
+# TCL Script File for Synthesis using Synopsys Design Compiler
 #-------------------------------------------------------------------------
 
 # 
@@ -21,8 +21,6 @@ set_host_options \
 # The library setup is kept in a separate tcl file which we now source
 
 source libs.tcl
-
-set alib_library_analysis_path          "/homes/owenhsin/share/ibm_soi12s0_alib/alib"
 
 set hdlin_sverilog_std                  2009
 set hdlin_ff_always_async_set_reset     true
